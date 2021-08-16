@@ -20,12 +20,13 @@ impl InnerTacho {
         self.current_rpm
     }
 
-    fn clean_up(&mut self) {
+    fn destroy(&mut self) {
         self.running = false;
         self.pin.clear_interrupt().unwrap();
     }   
 
     fn init(&mut self) {
+        self.running = true;
         self.pin.set_interrupt(Trigger::RisingEdge).unwrap();
     }
 
@@ -83,16 +84,16 @@ impl Tacho {
                 let mut locked_inner = inner.lock();
 
                 if locked_inner.running {
-                    return;
-                } else {
                     locked_inner.next_rpm_sample()
+                } else {
+                    return;
                 }
             }
         });
     }
 
     pub fn stop(&mut self) {
-        self.inner.lock().clean_up();
+        self.inner.lock().destroy();
     }
 
     pub fn get_rpm(&self) -> Option<u64> {
