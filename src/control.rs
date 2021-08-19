@@ -28,8 +28,11 @@ impl Control {
         self.pwm.set_duty_cycle(speed_percentage).unwrap();
     }
 
-    pub fn get_speed(&self) -> f64 {
-        self.pwm.duty_cycle().unwrap()
+    pub fn get_speed(&self) -> Option<f64> {
+        match self.pwm.duty_cycle() {
+            Ok(speed) => Some(speed),
+            Err(_) => None
+        }
     }
 }
 
