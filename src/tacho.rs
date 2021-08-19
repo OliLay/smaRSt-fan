@@ -23,7 +23,7 @@ impl InnerTacho {
     fn destroy(&mut self) {
         self.running = false;
         self.pin.clear_interrupt().unwrap();
-    }   
+    }
 
     fn init(&mut self) {
         self.running = true;
@@ -79,10 +79,8 @@ impl Tacho {
 
         thread::spawn(move || {
             inner.lock().init();
-
             loop {
                 let mut locked_inner = inner.lock();
-
                 if locked_inner.running {
                     locked_inner.next_rpm_sample()
                 } else {
@@ -98,5 +96,11 @@ impl Tacho {
 
     pub fn get_rpm(&self) -> Option<u64> {
         self.inner.lock().get_rpm()
+    }
+}
+
+impl Drop for Tacho {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
