@@ -1,15 +1,44 @@
+use pid::Pid;
 use rppal::pwm::{Channel, Polarity, Pwm};
 
-pub struct Control {
+pub struct PidControl {
+    pid: Pid<f64>,
+    min_speed: f64,
+    max_speed: f64,
+}
+
+impl PidControl {
+    pub fn new(desired_temperature: f64) -> PidControl {
+        let pid = Pid::new(0.01, 0.005, 0.0, 1.0, 1.0, 1.0, desired_temperature);
+
+        PidControl {
+            pid: pid,
+            min_speed: 0.0,
+            max_speed: 0.8,
+        }
+    }
+
+    pub fn control(&mut self, current_temperature: f64, current_speed: f64) -> f64 {
+        let gain = self.pid.next_control_output(current_temperature).output;
+        println!("Gain is {}", gain);
+
+        f64::max(
+            self.min_speed,
+            f64::min(self.max_speed, current_speed - gain),
+        )
+    }
+}
+
+pub struct FanControl {
     pwm: Pwm,
 }
 
-impl Control {
-    pub fn new(initial_speed_percentage: f64) -> Option<Control> {
-        Control::new_with_channel(initial_speed_percentage, Channel::Pwm0)
+impl FanControl {
+    pub fn new(initial_speed_percentage: f64) -> Option<FanControl> {
+        FanControl::new_with_channel(initial_speed_percentage, Channel::Pwm0)
     }
 
-    pub fn new_with_channel(initial_speed_percentage: f64, channel: Channel) -> Option<Control> {
+    pub fn new_with_channel(initial_speed_percentage: f64, channel: Channel) -> Option<FanControl> {
         let pwm = match Pwm::with_frequency(
             channel,
             25000.0,
@@ -21,7 +50,7 @@ impl Control {
             Err(_) => return None,
         };
 
-        Some(Control { pwm: pwm })
+        Some(FanControl { pwm: pwm })
     }
 
     pub fn set_speed(&self, speed_percentage: f64) {
@@ -31,12 +60,12 @@ impl Control {
     pub fn get_speed(&self) -> Option<f64> {
         match self.pwm.duty_cycle() {
             Ok(speed) => Some(speed),
-            Err(_) => None
+            Err(_) => None,
         }
     }
 }
 
-impl Drop for Control {
+impl Drop for FanControl {
     fn drop(&mut self) {
         self.pwm.disable().unwrap();
     }

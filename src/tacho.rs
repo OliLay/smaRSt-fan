@@ -2,7 +2,7 @@ use parking_lot::Mutex;
 use rppal::gpio::{Gpio, InputPin, Trigger};
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct Tacho {
     inner: Arc<Mutex<InnerTacho>>,
@@ -31,9 +31,12 @@ impl InnerTacho {
     }
 
     fn next_rpm_sample(&mut self) {
-        let result = self.pin.poll_interrupt(true, None);
+        let result = self
+            .pin
+            .poll_interrupt(true, Some(Duration::from_millis(100)));
 
         match result {
+            Ok(None) => self.current_rpm = Some(0),
             Ok(_) => self.sample(),
             Err(_) => {}
         }

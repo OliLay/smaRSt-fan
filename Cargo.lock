@@ -170,6 +170,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pid"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5222362a342cf1f0e5bfd031177a34e3d879bdcc2d89b6a7b7e4d0c089c5de4e"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "radium"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -236,6 +245,7 @@ name = "smarst-fan"
 version = "0.1.0"
 dependencies = [
  "parking_lot",
+ "pid",
  "rppal",
  "signal-hook",
  "systemstat",
