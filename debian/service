@@ -1,0 +1,8 @@
+[Unit]
+Description=smaRSt-Fan
+
+[Service]
+ExecStart=/usr/bin/smarst-fan
+
+[Install]
+WantedBy=multi-user.target
