@@ -8,19 +8,18 @@ pub struct PidControl {
 }
 
 impl PidControl {
-    pub fn new(desired_temperature: f64) -> PidControl {
-        let pid = Pid::new(0.01, 0.005, 0.0, 1.0, 1.0, 1.0, desired_temperature);
+    pub fn new(desired_temperature: f64, min_speed: f64, max_speed: f64) -> PidControl {
+        let pid = Pid::new(0.001, 0.001, 0.0, 0.01, 0.01, 0.001, desired_temperature);
 
         PidControl {
             pid: pid,
-            min_speed: 0.0,
-            max_speed: 0.8,
+            min_speed: min_speed,
+            max_speed: max_speed,
         }
     }
 
     pub fn control(&mut self, current_temperature: f64, current_speed: f64) -> f64 {
         let gain = self.pid.next_control_output(current_temperature).output;
-        println!("Gain is {}", gain);
 
         f64::max(
             self.min_speed,

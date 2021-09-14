@@ -1,6 +1,6 @@
 [package]
 name = "smarst-fan"
-description = "A Linux service written for controlling a fan"
+description = "Linux service for controlling a PWM fan"
 version = "0.1.0"
 edition = "2018"
 authors = ["Oliver Layer"]
@@ -15,7 +15,15 @@ parking_lot = "0.11.1"
 systemstat = "0.1.8"
 signal-hook = "0.3.9"
 pid = "2.1.0"
+config = "0.11"
+glob = "0.3"
+
 
 [package.metadata.deb]
 maintainer-scripts = "debian/"
 systemd-units = { enable = true, start = true }
+assets = [
+    ["target/release/smarst-fan", "/usr/bin/", "755"],
+    ["conf/*", "/etc/smaRSt-fan", "644"],
+]
+conf-files = ["/etc/smaRSt-fan/default.yaml"]

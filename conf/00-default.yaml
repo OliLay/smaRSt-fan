@@ -1,0 +1,4 @@
+tacho_gpio_pin: 5
+target_temperature: 50
+min_speed: 0.0
+max_speed: 0.8
