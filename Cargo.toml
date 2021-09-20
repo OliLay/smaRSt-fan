@@ -17,7 +17,8 @@ signal-hook = "0.3.9"
 pid = "2.1.0"
 config = "0.11"
 glob = "0.3"
-
+log = "0.4.14"
+simple_logger = "1.13.0"
 
 [package.metadata.deb]
 maintainer-scripts = "debian/"
