@@ -1,5 +1,16 @@
-log_level: WARN
-tacho_gpio_pin: 5
-target_temperature: 50
-min_speed: 0.0
-max_speed: 0.8
+logging:
+  log_level: INFO
+wiring:
+  tacho_gpio_pin: 5
+  pwm_channel: 0
+tacho:
+  enabled: true
+control:
+  target_temperature: 50
+  constraints:
+    min_speed: 0.0
+    max_speed: 0.8
+  coefficients:
+    proportional: 0.001
+    derivative: 0.0005
+    integral: 0.0

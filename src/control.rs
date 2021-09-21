@@ -1,3 +1,4 @@
+use crate::config::Config;
 use pid::Pid;
 use rppal::pwm::{Channel, Polarity, Pwm};
 
@@ -8,13 +9,21 @@ pub struct PidControl {
 }
 
 impl PidControl {
-    pub fn new(desired_temperature: f64, min_speed: f64, max_speed: f64) -> PidControl {
-        let pid = Pid::new(0.001, 0.001, 0.0, 0.01, 0.01, 0.001, desired_temperature);
+    pub fn new(config: &Config) -> PidControl {
+        let pid = Pid::new(
+            config.proportional,
+            config.integral,
+            config.derivative,
+            0.01,
+            0.01,
+            0.01,
+            config.target_temperature,
+        );
 
         PidControl {
             pid: pid,
-            min_speed: min_speed,
-            max_speed: max_speed,
+            min_speed: config.min_speed,
+            max_speed: config.max_speed,
         }
     }
 
@@ -33,11 +42,7 @@ pub struct FanControl {
 }
 
 impl FanControl {
-    pub fn new(initial_speed_percentage: f64) -> Option<FanControl> {
-        FanControl::new_with_channel(initial_speed_percentage, Channel::Pwm0)
-    }
-
-    pub fn new_with_channel(initial_speed_percentage: f64, channel: Channel) -> Option<FanControl> {
+    pub fn new(initial_speed_percentage: f64, channel: Channel) -> Option<FanControl> {
         let pwm = match Pwm::with_frequency(
             channel,
             25000.0,

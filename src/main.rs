@@ -1,21 +1,20 @@
 pub mod config;
 pub mod control;
 pub mod cpu_temp;
+pub mod logging;
 pub mod signals;
 pub mod tacho;
-pub mod logging;
 
 use crate::config::Config;
 use control::FanControl;
 use control::PidControl;
 use cpu_temp::CpuTemperatureReader;
+use logging::initialize_logging;
 use signals::SignalHandler;
 use tacho::Tacho;
-use logging::initialize_logging;
 
+use log::{trace, info, warn};
 use std::time::Duration;
-use log::{info, warn};
-
 
 fn main() {
     let signal_handler = SignalHandler::new().unwrap();
@@ -24,22 +23,28 @@ fn main() {
     initialize_logging(config.log_level);
     info!("Config is {:?}", config);
 
-    let mut tacho: Tacho = Tacho::new(config.tacho_gpio_pin);
-    tacho.start();
-    let fan_control = FanControl::new(0.0).unwrap();
-    let mut pid_control = PidControl::new(
-        config.target_temperature,
-        config.min_speed,
-        config.max_speed,
-    );
+    let tacho: Option<Tacho> = if config.tacho_enabled {
+        let mut tacho = Tacho::new(config.tacho_gpio_pin);
+        tacho.start();
+        Some(tacho)
+    } else {
+        None
+    };
+
+    let fan_control = FanControl::new(0.0, config.pwm_channel).unwrap();
+    let mut pid_control = PidControl::new(&config);
     let cpu_temp_reader = CpuTemperatureReader::new();
 
     while !signal_handler.should_terminate() {
         let current_temperature = cpu_temp_reader.get_temperature().unwrap();
-        let current_rpm = tacho.get_rpm();
+        let current_rpm = if tacho.is_some() {
+            tacho.as_ref().unwrap().get_rpm()
+        } else {
+            None
+        };
         let current_speed = fan_control.get_speed().unwrap();
 
-        info!(
+        trace!(
             "Speed is {:.1}%, RPM is {}, CPU temp is {:.1}°C",
             current_speed * 100.0,
             current_rpm

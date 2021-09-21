@@ -1,7 +1,7 @@
 use config::*;
 use glob::glob;
 use log::LevelFilter;
-use std::collections::HashMap;
+use rppal::pwm::Channel;
 
 #[derive(Debug)]
 pub struct Config {
@@ -9,10 +9,16 @@ pub struct Config {
     pub log_level: LevelFilter,
     // wiring
     pub tacho_gpio_pin: u8,
+    pub pwm_channel: Channel,
+    // tacho
+    pub tacho_enabled: bool,
     // control config
     pub target_temperature: f64,
     pub min_speed: f64,
     pub max_speed: f64,
+    pub proportional: f64,
+    pub derivative: f64,
+    pub integral: f64
 }
 
 impl Config {
@@ -27,26 +33,34 @@ impl Config {
             )
             .unwrap();
 
-        let config_map = settings.try_into::<HashMap<String, String>>().unwrap();
-
-        fn get_value<'a>(map: &'a HashMap<String, String>, key: &'a str) -> &'a str {
-            match map.get(key) {
-                Some(value) => value,
-                None => panic!(
-                    "Config entry with key '{}' is not present in the config file. Please add it.",
-                    key
-                ),
-            }
-        }
+        let get_value = |key: &str| match settings.get::<String>(key) {
+            Ok(value) => value,
+            Err(_) => panic!(
+                "Config entry with key '{}' is not present in the config file. Please add it.",
+                key
+            ),
+        };
 
         Config {
-            log_level: get_value(&config_map, "log_level").parse().unwrap(),
-            tacho_gpio_pin: get_value(&config_map, "tacho_gpio_pin").parse().unwrap(),
-            target_temperature: get_value(&config_map, "target_temperature")
-                .parse()
-                .unwrap(),
-            min_speed: get_value(&config_map, "min_speed").parse().unwrap(),
-            max_speed: get_value(&config_map, "max_speed").parse().unwrap(),
+            log_level: get_value("logging.log_level").parse().unwrap(),
+            tacho_gpio_pin: get_value("wiring.tacho_gpio_pin").parse().unwrap(),
+            pwm_channel: match get_value("wiring.pwm_channel").parse().unwrap() {
+                0 => Channel::Pwm0,
+                1 => Channel::Pwm1,
+                other => {
+                    panic!(
+                        "{} is not a valid Pwm channel. Allowed values are either 0 or 1.",
+                        other
+                    )
+                }
+            },
+            tacho_enabled: get_value("tacho.enabled").parse().unwrap(),
+            target_temperature: get_value("control.target_temperature").parse().unwrap(),
+            min_speed: get_value("control.constraints.min_speed").parse().unwrap(),
+            max_speed: get_value("control.constraints.max_speed").parse().unwrap(),
+            proportional: get_value("control.coefficients.proportional").parse().unwrap(),
+            derivative: get_value("control.coefficients.derivative").parse().unwrap(),
+            integral: get_value("control.coefficients.integral").parse().unwrap(),
         }
     }
 }
