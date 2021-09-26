@@ -1,7 +1,6 @@
 use config::*;
 use glob::glob;
 use log::LevelFilter;
-use rppal::pwm::Channel;
 
 #[derive(Debug)]
 pub struct Config {
@@ -9,7 +8,8 @@ pub struct Config {
     pub log_level: LevelFilter,
     // wiring
     pub tacho_gpio_pin: u8,
-    pub pwm_channel: Channel,
+    pub pwm_chip: u32,
+    pub pwm_channel: u32,
     // tacho
     pub tacho_enabled: bool,
     // control config
@@ -18,7 +18,7 @@ pub struct Config {
     pub max_speed: f64,
     pub proportional: f64,
     pub derivative: f64,
-    pub integral: f64
+    pub integral: f64,
 }
 
 impl Config {
@@ -44,22 +44,18 @@ impl Config {
         Config {
             log_level: get_value("logging.log_level").parse().unwrap(),
             tacho_gpio_pin: get_value("wiring.tacho_gpio_pin").parse().unwrap(),
-            pwm_channel: match get_value("wiring.pwm_channel").parse().unwrap() {
-                0 => Channel::Pwm0,
-                1 => Channel::Pwm1,
-                other => {
-                    panic!(
-                        "{} is not a valid Pwm channel. Allowed values are either 0 or 1.",
-                        other
-                    )
-                }
-            },
+            pwm_chip: get_value("wiring.pwm_chip").parse().unwrap(),
+            pwm_channel: get_value("wiring.pwm_channel").parse().unwrap(),
             tacho_enabled: get_value("tacho.enabled").parse().unwrap(),
             target_temperature: get_value("control.target_temperature").parse().unwrap(),
             min_speed: get_value("control.constraints.min_speed").parse().unwrap(),
             max_speed: get_value("control.constraints.max_speed").parse().unwrap(),
-            proportional: get_value("control.coefficients.proportional").parse().unwrap(),
-            derivative: get_value("control.coefficients.derivative").parse().unwrap(),
+            proportional: get_value("control.coefficients.proportional")
+                .parse()
+                .unwrap(),
+            derivative: get_value("control.coefficients.derivative")
+                .parse()
+                .unwrap(),
             integral: get_value("control.coefficients.integral").parse().unwrap(),
         }
     }

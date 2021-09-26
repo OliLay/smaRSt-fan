@@ -1,6 +1,6 @@
 use crate::config::Config;
 use pid::Pid;
-use rppal::pwm::{Channel, Polarity, Pwm};
+use sysfs_pwm::Pwm;
 
 pub struct PidControl {
     pid: Pid<f64>,
@@ -41,36 +41,58 @@ pub struct FanControl {
     pwm: Pwm,
 }
 
+// TODO: error handling (return results maybe? and handle in logic then instead of unwrap())
 impl FanControl {
-    pub fn new(initial_speed_percentage: f64, channel: Channel) -> Option<FanControl> {
-        let pwm = match Pwm::with_frequency(
-            channel,
-            25000.0,
-            initial_speed_percentage,
-            Polarity::Normal,
-            true,
-        ) {
+    const SECOND_IN_NANOSECONDS: f64 = 1000000000.0;
+
+    pub fn new(
+        initial_speed_percentage: f64,
+        pwm_chip: u32,
+        pwm_channel: u32,
+    ) -> Option<FanControl> {
+        let pwm = match Pwm::new(pwm_chip, pwm_channel) {
             Ok(pwm) => pwm,
             Err(_) => return None,
         };
 
-        Some(FanControl { pwm: pwm })
+        let fan_control = FanControl { pwm: pwm };
+
+        fan_control.enable();
+        fan_control.set_frequency(25000.0);
+        fan_control.set_speed(initial_speed_percentage);
+
+        Some(fan_control)
+    }
+
+    pub fn enable(&self) {
+        self.pwm.enable(true).unwrap();
+    }
+
+    pub fn disable(&self) {
+        self.pwm.enable(false).unwrap();
     }
 
     pub fn set_speed(&self, speed_percentage: f64) {
-        self.pwm.set_duty_cycle(speed_percentage).unwrap();
+        let duty_cycle_ns =
+            (self.pwm.get_period_ns().unwrap() as f64 * speed_percentage).round() as u32;
+        self.pwm.set_duty_cycle_ns(duty_cycle_ns).unwrap();
     }
 
     pub fn get_speed(&self) -> Option<f64> {
-        match self.pwm.duty_cycle() {
-            Ok(speed) => Some(speed),
+        match self.pwm.get_duty_cycle_ns() {
+            Ok(duty_cycle_ns) => Some(duty_cycle_ns as f64 / Self::SECOND_IN_NANOSECONDS),
             Err(_) => None,
         }
+    }
+
+    pub fn set_frequency(&self, frequency: f64) {
+        let period_ns = ((1.0 / frequency) * Self::SECOND_IN_NANOSECONDS) as u32;
+        self.pwm.set_period_ns(period_ns).unwrap();
     }
 }
 
 impl Drop for FanControl {
     fn drop(&mut self) {
-        self.pwm.disable().unwrap();
+        self.pwm.enable(false).unwrap()
     }
 }

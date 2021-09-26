@@ -2,6 +2,7 @@ logging:
   log_level: INFO
 wiring:
   tacho_gpio_pin: 5
+  pwm_chip: 0
   pwm_channel: 0
 tacho:
   enabled: true

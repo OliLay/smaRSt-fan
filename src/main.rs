@@ -13,7 +13,7 @@ use logging::initialize_logging;
 use signals::SignalHandler;
 use tacho::Tacho;
 
-use log::{trace, info, warn};
+use log::{info, trace, warn};
 use std::time::Duration;
 
 fn main() {
@@ -31,7 +31,7 @@ fn main() {
         None
     };
 
-    let fan_control = FanControl::new(0.0, config.pwm_channel).unwrap();
+    let fan_control = FanControl::new(0.0, config.pwm_chip, config.pwm_channel).unwrap();
     let mut pid_control = PidControl::new(&config);
     let cpu_temp_reader = CpuTemperatureReader::new();
 
