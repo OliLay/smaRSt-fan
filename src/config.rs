@@ -7,7 +7,7 @@ pub struct Config {
     // logging
     pub log_level: LevelFilter,
     // wiring
-    pub tacho_gpio_pin: u8,
+    pub tacho_gpio_pin: u64,
     pub pwm_chip: u32,
     pub pwm_channel: u32,
     // tacho

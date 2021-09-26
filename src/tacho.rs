@@ -1,8 +1,8 @@
 use parking_lot::Mutex;
-use rppal::gpio::{Gpio, InputPin, Trigger};
 use std::sync::Arc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
+use sysfs_gpio::{Direction, Edge, Pin};
 
 pub struct Tacho {
     inner: Arc<Mutex<InnerTacho>>,
@@ -10,7 +10,7 @@ pub struct Tacho {
 
 struct InnerTacho {
     pub running: bool,
-    pin: InputPin,
+    pin: Pin,
     last_instant: Option<Instant>,
     current_rpm: Option<u64>,
 }
@@ -22,24 +22,27 @@ impl InnerTacho {
 
     fn destroy(&mut self) {
         self.running = false;
-        self.pin.clear_interrupt().unwrap();
+        self.pin.unexport().unwrap();
     }
 
     fn init(&mut self) {
         self.running = true;
-        self.pin.set_interrupt(Trigger::RisingEdge).unwrap();
+        self.pin.export().unwrap();
     }
 
     fn next_rpm_sample(&mut self) {
-        let result = self
-            .pin
-            .poll_interrupt(true, Some(Duration::from_millis(100)));
+        // maybe one needs the closure with_exported?
+        self.pin.set_direction(Direction::In).unwrap();
+        self.pin.set_edge(Edge::RisingEdge).unwrap();
+
+        let mut poller = self.pin.get_poller().unwrap();
+        let result = poller.poll(100);
 
         match result {
             Ok(None) => self.current_rpm = Some(0),
             Ok(_) => self.sample(),
             Err(_) => {}
-        }
+        };
     }
 
     fn sample(&mut self) {
@@ -56,12 +59,8 @@ impl InnerTacho {
 }
 
 impl Tacho {
-    pub fn new(pin_number: u8) -> Self {
-        let pin = Gpio::new()
-            .unwrap()
-            .get(pin_number)
-            .unwrap()
-            .into_input_pullup();
+    pub fn new(pin_number: u64) -> Self {
+        let pin = Pin::new(pin_number);
 
         let inner_tacho = InnerTacho {
             running: false,
