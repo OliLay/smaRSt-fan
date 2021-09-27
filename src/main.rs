@@ -54,7 +54,10 @@ fn main() {
         );
 
         let new_speed = pid_control.control(current_temperature, current_speed);
-        fan_control.set_speed(new_speed);
+        match fan_control.set_speed(new_speed) {
+            Err(err) => warn!("Could not set fan speed! {}", err),
+            _ => {}
+        }
         std::thread::sleep(Duration::from_millis(300));
     }
 

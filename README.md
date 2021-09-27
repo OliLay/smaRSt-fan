@@ -1,6 +1,8 @@
 # smaRSt-fan
 
-A Linux service written for controlling a PWM capable fan with PID control logic and smart connectivity on a Raspberry Pi.
+A Linux service written for controlling a PWM capable fan with PID control logic and smart connectivity. 
+
+Designed to be device-agnostic by using `sysfs` for accessing PWM and GPIO (for the tacho). Comes with `systemd` integration.
 
 # Build
 To build, run 
