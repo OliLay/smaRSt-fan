@@ -32,7 +32,8 @@ impl InnerTacho {
 
         // Unfortunately needed, else one would need root rights to access sysfs.
         // See https://github.com/rust-embedded/rust-sysfs-gpio/issues/5.
-        thread::sleep(Duration::from_millis(40));
+        // TODO: maybe use retry crate at calls below instead of hardcoded sleep
+        thread::sleep(Duration::from_millis(100));
     }
 
     fn next_rpm_sample(&mut self) -> Result<(), String> {
@@ -84,11 +85,9 @@ impl Tacho {
             current_rpm: None,
         };
 
-        let tacho = Tacho {
+        Tacho {
             inner: Arc::new(Mutex::new(inner_tacho)),
-        };
-
-        tacho
+        }
     }
 
     pub fn start(&mut self) {

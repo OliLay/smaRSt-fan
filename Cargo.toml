@@ -20,6 +20,8 @@ config = "0.11"
 glob = "0.3"
 log = "0.4.14"
 simple_logger = "1.13.0"
+tokio = { version = "1.12.0", features = ["rt", "macros", "io-util"]}
+rumqttc = "0.8.0"
 
 [package.metadata.deb]
 maintainer-scripts = "debian/"

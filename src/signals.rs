@@ -2,23 +2,21 @@ use signal_hook::consts::TERM_SIGNALS;
 use signal_hook::flag;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::io::Error;
 
 pub struct SignalHandler {
     terminate_flag: Arc<AtomicBool>,
 }
 
 impl SignalHandler {
-    pub fn new() -> Option<SignalHandler> {
+    pub fn new() -> Result<SignalHandler, Error> {
         let terminate_flag = Arc::new(AtomicBool::new(false));
 
         for sig in TERM_SIGNALS {
-            match flag::register(*sig, Arc::clone(&terminate_flag)) {
-                Err(_) => return None,
-                _ => {}
-            }
+            flag::register(*sig, Arc::clone(&terminate_flag))?;
         }
 
-        Some(SignalHandler {
+        Ok(SignalHandler {
             terminate_flag: terminate_flag,
         })
     }

@@ -15,3 +15,7 @@ control:
     proportional: 0.001
     derivative: 0.0005
     integral: 0.0
+connectivity:
+  enabled: false
+  broker: "localhost:1883"
+  
