@@ -28,4 +28,4 @@ You can create your own config file, e.g. called `01-my-config.yaml` and save it
 - [x] PID Control
 - [x] Service
 - [x] Configuration
-- [ ] Connectivity
+- [x] Connectivity
