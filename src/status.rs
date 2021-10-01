@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Copy, Clone)]
 pub struct Status {
     pub rpm: Option<u64>,
     pub speed: Option<f64>,

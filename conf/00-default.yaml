@@ -15,7 +15,12 @@ control:
     proportional: 0.001
     derivative: 0.0005
     integral: 0.0
-connectivity:
+mqtt:
   enabled: false
-  broker: "localhost:1883"
+  broker: "localhost"
+  port: 1883
+  topics:
+    rpm: "fan/rpm"
+    speed: "fan/speed"
+    temperature: "fan/temperature"
   

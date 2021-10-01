@@ -45,8 +45,7 @@ fn main() {
 
     let fan_control = FanControl::new(0.0, config.pwm_chip, config.pwm_channel).unwrap();
 
-    // TODO: configure from config
-    let mqtt_client = MqttClient::new(status.clone());
+    let mqtt_client = MqttClient::new(status.clone(), &config);
     mqtt_client.start();
 
     let mut pid_control = PidControl::new(&config);

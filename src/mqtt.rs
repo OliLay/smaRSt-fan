@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+use crate::config::Config;
 use crate::Status;
 
 pub struct MqttClient {
@@ -12,8 +13,9 @@ pub struct MqttClient {
 }
 
 impl MqttClient {
-    pub fn new(status: Arc<Mutex<Status>>) -> Self {
-        let mut mqtt_options = MqttOptions::new("smaRSt-fan", "localhost", 1883);
+    pub fn new(status: Arc<Mutex<Status>>, config: &Config) -> Self {
+        let mut mqtt_options =
+            MqttOptions::new("smaRSt-fan", config.mqtt_broker.clone(), config.mqtt_port);
         mqtt_options.set_keep_alive(60);
 
         let (client, mut connection) = Client::new(mqtt_options, 10);
@@ -29,6 +31,9 @@ impl MqttClient {
         let inner = InnerMqttClient {
             client: client,
             status: status,
+            topic_rpm: config.mqtt_topic_rpm.clone(),
+            topic_speed: config.mqtt_topic_speed.clone(),
+            topic_temperature: config.mqtt_topic_temperature.clone()
         };
 
         MqttClient {
@@ -53,17 +58,31 @@ impl MqttClient {
 struct InnerMqttClient {
     client: Client,
     status: Arc<Mutex<Status>>,
+    topic_rpm: String,
+    topic_speed: String,
+    topic_temperature: String
 }
 
 impl InnerMqttClient {
     fn publish(&mut self) {
-        let aquired_status = self.status.lock();
-        if aquired_status.rpm.is_some() {
+        let status : Status;
+        {
+            let aquired_status = self.status.lock();
+            status = aquired_status.clone();
+        }
+
+        self.publish_single_topic(status.rpm, self.topic_rpm.clone());
+        self.publish_single_topic(status.speed, self.topic_speed.clone());
+        self.publish_single_topic(status.temperature, self.topic_temperature.clone())
+    }
+
+    fn publish_single_topic<T: ToString>(&mut self, value: Option<T>, topic: String) {
+        if value.is_some() {
             let publish_result = self.client.try_publish(
-                "fan/rpm",
+                topic,
                 QoS::AtMostOnce,
                 false,
-                aquired_status.rpm.unwrap().to_string(),
+                value.unwrap().to_string(),
             );
 
             match publish_result {

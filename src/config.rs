@@ -19,6 +19,13 @@ pub struct Config {
     pub proportional: f64,
     pub derivative: f64,
     pub integral: f64,
+    // mqtt
+    pub mqtt_enabled: bool,
+    pub mqtt_broker: String,
+    pub mqtt_port: u16,
+    pub mqtt_topic_rpm: String,
+    pub mqtt_topic_speed: String,
+    pub mqtt_topic_temperature: String,
 }
 
 impl Config {
@@ -57,6 +64,12 @@ impl Config {
                 .parse()
                 .unwrap(),
             integral: get_value("control.coefficients.integral").parse().unwrap(),
+            mqtt_enabled: get_value("mqtt.enabled").parse().unwrap(),
+            mqtt_broker: get_value("mqtt.broker").parse().unwrap(),
+            mqtt_port: get_value("mqtt.port").parse().unwrap(),
+            mqtt_topic_rpm: get_value("mqtt.topics.rpm").parse().unwrap(),
+            mqtt_topic_speed: get_value("mqtt.topics.speed").parse().unwrap(),
+            mqtt_topic_temperature: get_value("mqtt.topics.temperature").parse().unwrap(),
         }
     }
 }
