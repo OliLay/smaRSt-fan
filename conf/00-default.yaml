@@ -17,10 +17,12 @@ control:
     integral: 0.0
 mqtt:
   enabled: false
-  broker: "localhost"
-  port: 1883
+  broker:
+    address: "localhost"
+    port: 1883
   topics:
     rpm: "fan/rpm"
     speed: "fan/speed"
     temperature: "fan/temperature"
+  period_secs: 10
   
