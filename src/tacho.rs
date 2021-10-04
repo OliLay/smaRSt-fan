@@ -1,4 +1,4 @@
-use log::warn;
+use log::{error, warn};
 use parking_lot::Mutex;
 use retry::{delay::Fixed, retry};
 use std::sync::Arc;
@@ -13,6 +13,7 @@ pub struct Tacho {
 struct InnerTacho {
     pub running: bool,
     pin: Pin,
+    poller: Option<sysfs_gpio::PinPoller>,
     last_instant: Option<Instant>,
     current_rpm: Option<u64>,
 }
@@ -22,14 +23,35 @@ impl InnerTacho {
         self.current_rpm
     }
 
-    fn destroy(&mut self) {
+    fn destroy(&mut self) -> Result<(), String> {
+        match self.pin.unexport() {
+            Err(err) => Err(format!("Could not unexport GPIO Pin. {}", err)),
+            _ => Ok(()),
+        }?;
+
         self.running = false;
-        self.pin.unexport().unwrap();
+        Ok(())
     }
 
-    fn init(&mut self) {
+    fn init(&mut self) -> Result<(), String> {
+        match self.pin.export() {
+            Err(err) => Err(format!("Could not export GPIO Pin. {}", err)),
+            _ => Ok(()),
+        }?;
+
+        self.set_pin_direction()?;
+        self.set_pin_edge()?;
+
+        match self.pin.get_poller() {
+            Ok(poller) => {
+                self.poller = Some(poller);
+                Ok(())
+            }
+            Err(err) => Err(format!("Could not create poller for GPIO. {}", err)),
+        }?;
+
         self.running = true;
-        self.pin.export().unwrap();
+        Ok(())
     }
 
     fn set_pin_direction(&mut self) -> Result<(), String> {
@@ -65,16 +87,8 @@ impl InnerTacho {
     }
 
     fn next_rpm_sample(&mut self) -> Result<(), String> {
-        self.set_pin_direction()?;
-        self.set_pin_edge()?;
-
-        let mut poller = match self.pin.get_poller() {
-            Ok(poller) => poller,
-            Err(err) => return Err(format!("Could not create poller for GPIO. {}", err)),
-        };
-
-        let result = poller.poll(100);
-        match result {
+        let poller = self.poller.as_mut().unwrap();
+        match poller.poll(100) {
             Ok(None) => self.current_rpm = Some(0),
             Ok(_) => self.sample(),
             Err(err) => return Err(format!("Could not poll GPIO. {}", err)),
@@ -103,6 +117,7 @@ impl Tacho {
         let inner_tacho = InnerTacho {
             running: false,
             pin: pin,
+            poller: None,
             last_instant: None,
             current_rpm: None,
         };
@@ -115,24 +130,36 @@ impl Tacho {
     pub fn start(&mut self) {
         let inner = self.inner.clone();
 
-        thread::spawn(move || {
-            inner.lock().init();
-            loop {
-                let mut locked_inner = inner.lock();
-                if locked_inner.running {
-                    match locked_inner.next_rpm_sample() {
-                        Err(err) => warn!("Could not sample RPM due to error: {}", err),
-                        Ok(_) => {}
-                    }
-                } else {
-                    return;
+        match inner.lock().init() {
+            Err(err) => {
+                error!(
+                    "Tacho could not be initialized. Is your configuration correct? {}",
+                    err
+                )
+            }
+            Ok(_) => {}
+        }
+
+        thread::spawn(move || loop {
+            let mut locked_inner = inner.lock();
+            if locked_inner.running {
+                match locked_inner.next_rpm_sample() {
+                    Err(err) => warn!("Could not sample RPM due to error: {}", err),
+                    Ok(_) => {}
                 }
+            } else {
+                return;
             }
         });
     }
 
     pub fn stop(&mut self) {
-        self.inner.lock().destroy();
+        match self.inner.lock().destroy() {
+            Err(err) => {
+                warn!("Tacho could not be destroyed properly. {}", err)
+            }
+            Ok(_) => {}
+        }
     }
 
     pub fn get_rpm(&self) -> Option<u64> {
