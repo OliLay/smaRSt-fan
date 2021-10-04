@@ -4,8 +4,8 @@ use sysfs_pwm::Pwm;
 
 pub struct PidControl {
     pid: Pid<f64>,
-    min_speed: f64,
-    max_speed: f64,
+    min_throttle: f64,
+    max_throttle: f64,
 }
 
 impl PidControl {
@@ -22,17 +22,17 @@ impl PidControl {
 
         PidControl {
             pid: pid,
-            min_speed: config.min_speed,
-            max_speed: config.max_speed,
+            min_throttle: config.min_throttle,
+            max_throttle: config.max_throttle,
         }
     }
 
-    pub fn control(&mut self, current_temperature: f64, current_speed: f64) -> f64 {
+    pub fn control(&mut self, current_temperature: f64, current_throttle: f64) -> f64 {
         let gain = self.pid.next_control_output(current_temperature).output;
 
         f64::max(
-            self.min_speed,
-            f64::min(self.max_speed, current_speed - gain),
+            self.min_throttle,
+            f64::min(self.max_throttle, current_throttle - gain),
         )
     }
 }
@@ -45,7 +45,7 @@ impl FanControl {
     const SECOND_IN_NANOSECONDS: f64 = 1_000_000_000.0;
 
     pub fn new(
-        initial_speed_percentage: f64,
+        initial_throttle_percentage: f64,
         pwm_chip: u32,
         pwm_channel: u32,
     ) -> Result<FanControl, String> {
@@ -63,7 +63,7 @@ impl FanControl {
 
         fan_control.enable()?;
         fan_control.set_frequency(25000.0)?;
-        fan_control.set_speed(initial_speed_percentage)?;
+        fan_control.set_throttle(initial_throttle_percentage)?;
 
         Ok(fan_control)
     }
@@ -96,9 +96,9 @@ impl FanControl {
         Ok(())
     }
 
-    pub fn set_speed(&self, speed_percentage: f64) -> Result<(), String> {
+    pub fn set_throttle(&self, throttle_percentage: f64) -> Result<(), String> {
         let duty_cycle = match self.pwm.get_period_ns() {
-            Ok(period) => (period as f64 * speed_percentage).round() as u32,
+            Ok(period) => (period as f64 * throttle_percentage).round() as u32,
             Err(err) => return Err(format!("Could not get current period from PWM. {}", err)),
         };
 
@@ -108,7 +108,7 @@ impl FanControl {
         }
     }
 
-    pub fn get_speed(&self) -> Option<f64> {
+    pub fn get_throttle(&self) -> Option<f64> {
         let period = self.pwm.get_period_ns();
         let duty_cycle = self.pwm.get_duty_cycle_ns();
 

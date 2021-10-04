@@ -14,8 +14,8 @@ pub struct Config {
     pub tacho_enabled: bool,
     // control config
     pub target_temperature: f64,
-    pub min_speed: f64,
-    pub max_speed: f64,
+    pub min_throttle: f64,
+    pub max_throttle: f64,
     pub proportional: f64,
     pub derivative: f64,
     pub integral: f64,
@@ -24,7 +24,7 @@ pub struct Config {
     pub mqtt_broker_address: String,
     pub mqtt_broker_port: u16,
     pub mqtt_topic_rpm: String,
-    pub mqtt_topic_speed: String,
+    pub mqtt_topic_throttle: String,
     pub mqtt_topic_temperature: String,
     pub mqtt_period_secs: u64,
 }
@@ -56,8 +56,8 @@ impl Config {
             pwm_channel: get_value("wiring.pwm_channel").parse().unwrap(),
             tacho_enabled: get_value("tacho.enabled").parse().unwrap(),
             target_temperature: get_value("control.target_temperature").parse().unwrap(),
-            min_speed: get_value("control.constraints.min_speed").parse().unwrap(),
-            max_speed: get_value("control.constraints.max_speed").parse().unwrap(),
+            min_throttle: get_value("control.constraints.min_throttle").parse().unwrap(),
+            max_throttle: get_value("control.constraints.max_throttle").parse().unwrap(),
             proportional: get_value("control.coefficients.proportional")
                 .parse()
                 .unwrap(),
@@ -69,7 +69,7 @@ impl Config {
             mqtt_broker_address: get_value("mqtt.broker.address").parse().unwrap(),
             mqtt_broker_port: get_value("mqtt.broker.port").parse().unwrap(),
             mqtt_topic_rpm: get_value("mqtt.topics.rpm").parse().unwrap(),
-            mqtt_topic_speed: get_value("mqtt.topics.speed").parse().unwrap(),
+            mqtt_topic_throttle: get_value("mqtt.topics.throttle").parse().unwrap(),
             mqtt_topic_temperature: get_value("mqtt.topics.temperature").parse().unwrap(),
             mqtt_period_secs: get_value("mqtt.period_secs").parse().unwrap(),
         }

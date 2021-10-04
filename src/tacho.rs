@@ -1,8 +1,9 @@
 use log::warn;
 use parking_lot::Mutex;
+use retry::{delay::Fixed, retry};
 use std::sync::Arc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use sysfs_gpio::{Direction, Edge, Pin};
 
 pub struct Tacho {
@@ -29,22 +30,43 @@ impl InnerTacho {
     fn init(&mut self) {
         self.running = true;
         self.pin.export().unwrap();
+    }
 
-        // Unfortunately needed, else one would need root rights to access sysfs.
-        // See https://github.com/rust-embedded/rust-sysfs-gpio/issues/5.
-        // TODO: maybe use retry crate at calls below instead of hardcoded sleep
-        thread::sleep(Duration::from_millis(100));
+    fn set_pin_direction(&mut self) -> Result<(), String> {
+        match retry(Fixed::from_millis(500), || {
+            match self.pin.set_direction(Direction::In) {
+                Err(err) => return Err(format!("Could not set direction on GPIO. {}", err)),
+                Ok(_) => Ok(()),
+            }
+        }) {
+            Err(retry::Error::Operation {
+                error,
+                total_delay: _,
+                tries: _,
+            }) => return Err(error),
+            _ => Ok(()),
+        }
+    }
+
+    fn set_pin_edge(&mut self) -> Result<(), String> {
+        match retry(Fixed::from_millis(500), || {
+            match self.pin.set_edge(Edge::RisingEdge) {
+                Err(err) => return Err(format!("Could not set edge on GPIO. {}", err)),
+                Ok(_) => Ok(()),
+            }
+        }) {
+            Err(retry::Error::Operation {
+                error,
+                total_delay: _,
+                tries: _,
+            }) => return Err(error),
+            _ => Ok(()),
+        }
     }
 
     fn next_rpm_sample(&mut self) -> Result<(), String> {
-        match self.pin.set_direction(Direction::In) {
-            Err(err) => return Err(format!("Could not set direction on GPIO. {}", err)),
-            Ok(_) => {}
-        };
-        match self.pin.set_edge(Edge::RisingEdge) {
-            Err(err) => return Err(format!("Could not set edge on GPIO. {}", err)),
-            Ok(_) => {}
-        };
+        self.set_pin_direction()?;
+        self.set_pin_edge()?;
 
         let mut poller = match self.pin.get_poller() {
             Ok(poller) => poller,

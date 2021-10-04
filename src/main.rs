@@ -39,7 +39,7 @@ fn main() {
 
     let status = Arc::new(Mutex::new(Status {
         rpm: None,
-        speed: None,
+        throttle: None,
         temperature: None,
     }));
 
@@ -55,24 +55,24 @@ fn main() {
 
     while !signal_handler.should_terminate() {
         let current_temperature = cpu_temp_reader.get_temperature();
-        let current_speed = fan_control.get_speed();
+        let current_throttle = fan_control.get_throttle();
         let current_rpm = if tacho.is_some() {
             tacho.as_ref().unwrap().get_rpm()
         } else {
             None
         };
 
-        let new_speed = pid_control.control(current_temperature.unwrap(), current_speed.unwrap());
+        let new_throttle = pid_control.control(current_temperature.unwrap(), current_throttle.unwrap());
 
-        match fan_control.set_speed(new_speed) {
-            Err(err) => warn!("Could not set fan speed! {}", err),
+        match fan_control.set_throttle(new_throttle) {
+            Err(err) => warn!("Could not set fan throttle! {}", err),
             _ => {}
         }
 
         {
             let mut aquired_status = status.lock();
             aquired_status.rpm = current_rpm;
-            aquired_status.speed = current_speed;
+            aquired_status.throttle = current_throttle;
             aquired_status.temperature = current_temperature;
 
             trace!("{}", aquired_status);

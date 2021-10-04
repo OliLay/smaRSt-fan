@@ -43,7 +43,7 @@ impl MqttClient {
             client: client,
             status: status,
             topic_rpm: config.mqtt_topic_rpm.clone(),
-            topic_speed: config.mqtt_topic_speed.clone(),
+            topic_throttle: config.mqtt_topic_throttle.clone(),
             topic_temperature: config.mqtt_topic_temperature.clone(),
         };
 
@@ -72,7 +72,7 @@ struct InnerMqttClient {
     client: Client,
     status: Arc<Mutex<Status>>,
     topic_rpm: String,
-    topic_speed: String,
+    topic_throttle: String,
     topic_temperature: String,
 }
 
@@ -85,7 +85,7 @@ impl InnerMqttClient {
         }
 
         self.publish_sample(status.rpm, self.topic_rpm.clone());
-        self.publish_sample(status.speed, self.topic_speed.clone());
+        self.publish_sample(status.throttle, self.topic_throttle.clone());
         self.publish_sample(status.temperature, self.topic_temperature.clone())
     }
 

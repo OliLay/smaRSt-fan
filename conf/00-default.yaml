@@ -9,8 +9,8 @@ tacho:
 control:
   target_temperature: 50
   constraints:
-    min_speed: 0.0
-    max_speed: 0.8
+    min_throttle: 0.0
+    max_throttle: 0.8
   coefficients:
     proportional: 0.001
     derivative: 0.0005
@@ -22,7 +22,7 @@ mqtt:
     port: 1883
   topics:
     rpm: "fan/rpm"
-    speed: "fan/speed"
+    throttle: "fan/throttle"
     temperature: "fan/temperature"
   period_secs: 10
   
