@@ -86,7 +86,10 @@ impl InnerMqttClient {
 
         self.publish_sample(status.rpm, self.topic_rpm.clone());
         self.publish_sample(status.throttle, self.topic_throttle.clone());
-        self.publish_sample(status.temperature, self.topic_temperature.clone())
+        self.publish_sample(
+            status.temperature.map(|value| format!("{:.1}", value)),
+            self.topic_temperature.clone(),
+        )
     }
 
     fn publish_sample<T: ToString>(&mut self, value: Option<T>, topic: String) {
