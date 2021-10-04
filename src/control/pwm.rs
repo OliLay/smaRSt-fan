@@ -1,54 +1,17 @@
-use crate::config::Config;
-use pid::Pid;
 use sysfs_pwm::Pwm;
 
-pub struct PidControl {
-    pid: Pid<f64>,
-    min_throttle: f64,
-    max_throttle: f64,
-}
-
-impl PidControl {
-    pub fn new(config: &Config) -> PidControl {
-        let pid = Pid::new(
-            config.proportional,
-            config.integral,
-            config.derivative,
-            0.01,
-            0.01,
-            0.01,
-            config.target_temperature,
-        );
-
-        PidControl {
-            pid: pid,
-            min_throttle: config.min_throttle,
-            max_throttle: config.max_throttle,
-        }
-    }
-
-    pub fn control(&mut self, current_temperature: f64, current_throttle: f64) -> f64 {
-        let gain = self.pid.next_control_output(current_temperature).output;
-
-        f64::max(
-            self.min_throttle,
-            f64::min(self.max_throttle, current_throttle - gain),
-        )
-    }
-}
-
-pub struct FanControl {
+pub struct PwmControl {
     pwm: Pwm,
 }
 
-impl FanControl {
+impl PwmControl {
     const SECOND_IN_NANOSECONDS: f64 = 1_000_000_000.0;
 
     pub fn new(
         initial_throttle_percentage: f64,
         pwm_chip: u32,
         pwm_channel: u32,
-    ) -> Result<FanControl, String> {
+    ) -> Result<PwmControl, String> {
         let pwm = match Pwm::new(pwm_chip, pwm_channel) {
             Ok(pwm) => pwm,
             Err(_) => {
@@ -59,7 +22,7 @@ impl FanControl {
             }
         };
 
-        let fan_control = FanControl { pwm: pwm };
+        let fan_control = PwmControl { pwm: pwm };
 
         fan_control.enable()?;
         fan_control.set_frequency(25000.0)?;
@@ -130,7 +93,7 @@ impl FanControl {
     }
 }
 
-impl Drop for FanControl {
+impl Drop for PwmControl {
     fn drop(&mut self) {
         self.pwm.enable(false).unwrap()
     }

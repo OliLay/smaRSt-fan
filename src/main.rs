@@ -1,24 +1,21 @@
 pub mod config;
 pub mod control;
-pub mod cpu_temp;
 pub mod logging;
 pub mod mqtt;
+pub mod sensing;
 pub mod signals;
-pub mod status;
-pub mod tacho;
 
 use crate::config::Config;
-use control::FanControl;
-use control::PidControl;
-use cpu_temp::CpuTemperatureReader;
+use control::pid::PidControl;
+use control::pwm::PwmControl;
+use log::{info, trace, warn};
 use logging::initialize_logging;
 use mqtt::MqttClient;
-use signals::SignalHandler;
-use status::Status;
-use tacho::Tacho;
-
-use log::{info, trace, warn};
 use parking_lot::Mutex;
+use sensing::cpu_temp::CpuTemperatureReader;
+use sensing::status::Status;
+use sensing::tacho::Tacho;
+use signals::SignalHandler;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -43,7 +40,7 @@ fn main() {
         temperature: None,
     }));
 
-    let fan_control = FanControl::new(0.0, config.pwm_chip, config.pwm_channel).unwrap();
+    let fan_control = PwmControl::new(0.0, config.pwm_chip, config.pwm_channel).unwrap();
 
     if config.mqtt_enabled {
         let mqtt_client = MqttClient::new(status.clone(), &config);
@@ -62,7 +59,8 @@ fn main() {
             None
         };
 
-        let new_throttle = pid_control.control(current_temperature.unwrap(), current_throttle.unwrap());
+        let new_throttle =
+            pid_control.control(current_temperature.unwrap(), current_throttle.unwrap());
 
         match fan_control.set_throttle(new_throttle) {
             Err(err) => warn!("Could not set fan throttle! {}", err),
