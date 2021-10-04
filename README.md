@@ -26,7 +26,7 @@ cargo deb
 You may have to install `cargo-deb` at first.
 
 ## Installation
-1. Follow the build instructions above (no binary available yet)
+1. Follow the build instructions above (no binary available yet) or download the binary from the [GitHub release page](https://github.com/OliLay/smaRSt-fan/releases)
 1. Install the .deb package, e.g. by running `sudo dpkg -i target/debian/smarst-fan_0.1.0_armhf.deb`
 1. Configure smaRSt-fan, if needed (see [Configuration](#configuration))
 1. Check the status of the service by running `sudo systemctl status smarst-fan`
