@@ -1,7 +1,7 @@
 [package]
 name = "smarst-fan"
 description = "Linux service for controlling a PWM fan"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2018"
 authors = ["Oliver Layer"]
 readme = "README.md"

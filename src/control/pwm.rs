@@ -1,3 +1,4 @@
+use retry::{delay::Fixed, retry};
 use sysfs_pwm::Pwm;
 
 pub struct PwmControl {
@@ -24,28 +25,41 @@ impl PwmControl {
 
         let fan_control = PwmControl { pwm: pwm };
 
-        fan_control.enable()?;
-        fan_control.set_frequency(25000.0)?;
-        fan_control.set_throttle(initial_throttle_percentage)?;
+        fan_control.export()?;
 
-        Ok(fan_control)
+        // retry is needed here, as exporting takes a while, 
+        // and the method above is not blocking.
+        match retry(Fixed::from_millis(300), || {
+            fan_control.set_frequency(25000.0)?;
+            fan_control.set_throttle(initial_throttle_percentage)?;
+            fan_control.enable()?;
+
+            Ok(())
+        }) {
+            Err(retry::Error::Operation {
+                error,
+                total_delay: _,
+                tries: _,
+            }) => Err(error),
+            _ => Ok(fan_control),
+        }
+    }
+
+    fn export(&self) -> Result<(), String> {
+        match self.pwm.export() {
+            Err(err) => Err(format!("Could not export PWM. {}", err)),
+            Ok(_) => Ok(()),
+        }
     }
 
     pub fn enable(&self) -> Result<(), String> {
-        match self.pwm.export() {
-            Err(err) => return Err(format!("Could not export PWM. {}", err)),
-            Ok(_) => {}
-        };
-
         match self.pwm.enable(true) {
-            Err(err) => return Err(format!("Could not enable PWM. {}", err)),
-            Ok(_) => {}
-        };
-
-        Ok(())
+            Err(err) => Err(format!("Could not enable PWM. {}", err)),
+            Ok(_) => Ok(()),
+        }
     }
 
-    pub fn disable(&self) -> Result<(), String> {
+    pub fn destroy(&self) -> Result<(), String> {
         match self.pwm.enable(false) {
             Err(err) => return Err(format!("Could not disable PWM. {}", err)),
             Ok(_) => {}
@@ -95,6 +109,6 @@ impl PwmControl {
 
 impl Drop for PwmControl {
     fn drop(&mut self) {
-        self.pwm.enable(false).unwrap()
+        self.destroy().unwrap();
     }
 }
