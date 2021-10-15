@@ -1,5 +1,5 @@
-use pid::Pid;
 use crate::config::Config;
+use pid::Pid;
 
 pub struct PidControl {
     pid: Pid<f64>,
@@ -16,6 +16,7 @@ impl PidControl {
             0.01,
             0.01,
             0.01,
+            100.0,
             config.target_temperature,
         );
 
