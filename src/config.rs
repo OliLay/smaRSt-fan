@@ -10,6 +10,7 @@ pub struct Config {
     pub tacho_gpio_pin: u64,
     pub pwm_chip: u32,
     pub pwm_channel: u32,
+    pub pwm_frequency: f64,
     // tacho
     pub tacho_enabled: bool,
     // control config
@@ -54,6 +55,7 @@ impl Config {
             tacho_gpio_pin: get_value("wiring.tacho_gpio_pin").parse().unwrap(),
             pwm_chip: get_value("wiring.pwm_chip").parse().unwrap(),
             pwm_channel: get_value("wiring.pwm_channel").parse().unwrap(),
+            pwm_frequency: get_value("wiring.pwm_frequency").parse().unwrap(),
             tacho_enabled: get_value("tacho.enabled").parse().unwrap(),
             target_temperature: get_value("control.target_temperature").parse().unwrap(),
             min_throttle: get_value("control.constraints.min_throttle").parse().unwrap(),

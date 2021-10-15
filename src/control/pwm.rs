@@ -1,3 +1,4 @@
+use crate::config::Config;
 use retry::{delay::Fixed, retry};
 use sysfs_pwm::Pwm;
 
@@ -8,10 +9,20 @@ pub struct PwmControl {
 impl PwmControl {
     const SECOND_IN_NANOSECONDS: f64 = 1_000_000_000.0;
 
+    pub fn new_from_config(config: &Config) -> Result<PwmControl, String> {
+        PwmControl::new(
+            0.0,
+            config.pwm_chip,
+            config.pwm_channel,
+            config.pwm_frequency,
+        )
+    }
+
     pub fn new(
         initial_throttle_percentage: f64,
         pwm_chip: u32,
         pwm_channel: u32,
+        pwm_frequency: f64,
     ) -> Result<PwmControl, String> {
         let pwm = match Pwm::new(pwm_chip, pwm_channel) {
             Ok(pwm) => pwm,
@@ -27,10 +38,10 @@ impl PwmControl {
 
         fan_control.export()?;
 
-        // retry is needed here, as exporting takes a while, 
+        // retry is needed here, as exporting takes a while,
         // and the method above is not blocking.
         match retry(Fixed::from_millis(300), || {
-            fan_control.set_frequency(25000.0)?;
+            fan_control.set_frequency(pwm_frequency)?;
             fan_control.set_throttle(initial_throttle_percentage)?;
             fan_control.enable()?;
 

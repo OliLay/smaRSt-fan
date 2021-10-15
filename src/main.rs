@@ -40,7 +40,7 @@ fn main() {
         temperature: None,
     }));
 
-    let fan_control = PwmControl::new(0.0, config.pwm_chip, config.pwm_channel).unwrap();
+    let fan_control = PwmControl::new_from_config(&config).unwrap();
 
     if config.mqtt_enabled {
         let mqtt_client = MqttClient::new(status.clone(), &config);
